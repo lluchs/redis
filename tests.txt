@@ -1,0 +1,16 @@
+ping
+set
+get
+incr
+lpush
+rpush
+lpop
+rpop
+sadd
+hset
+spop
+lrange_100
+lrange_300
+lrange_500
+lrange_600
+mset
