@@ -34,6 +34,8 @@
 #include "latency.h"
 #include "atomicvar.h"
 
+#include <ultmigration.h>
+
 #include <time.h>
 #include <signal.h>
 #include <sys/wait.h>
@@ -1944,6 +1946,7 @@ void initServer(void) {
     slowlogInit();
     latencyMonitorInit();
     bioInit();
+    ult_register_klt();
     server.initial_memory_usage = zmalloc_used_memory();
 }
 
@@ -2469,6 +2472,7 @@ int processCommand(client *c) {
     }
 
     /* Exec the command */
+    ult_migrate(ULT_FAST);
     if (c->flags & CLIENT_MULTI &&
         c->cmd->proc != execCommand && c->cmd->proc != discardCommand &&
         c->cmd->proc != multiCommand && c->cmd->proc != watchCommand)
@@ -2481,6 +2485,7 @@ int processCommand(client *c) {
         if (listLength(server.ready_keys))
             handleClientsBlockedOnLists();
     }
+    ult_migrate(ULT_SLOW);
     return C_OK;
 }
 
