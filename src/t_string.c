@@ -30,6 +30,8 @@
 #include "server.h"
 #include <math.h> /* isnan(), isinf() */
 
+#include <swp.h>
+
 /*-----------------------------------------------------------------------------
  * String Commands
  *----------------------------------------------------------------------------*/
@@ -65,6 +67,7 @@ static int checkStringLength(client *c, long long size) {
 #define OBJ_SET_PX (1<<3)     /* Set if time in ms in given */
 
 void setGenericCommand(client *c, int flags, robj *key, robj *val, robj *expire, int unit, robj *ok_reply, robj *abort_reply) {
+    SWP_MARK;
     long long milliseconds = 0; /* initialized to avoid any harmness warning */
 
     if (expire) {
@@ -90,6 +93,7 @@ void setGenericCommand(client *c, int flags, robj *key, robj *val, robj *expire,
     if (expire) notifyKeyspaceEvent(NOTIFY_GENERIC,
         "expire",key,c->db->id);
     addReply(c, ok_reply ? ok_reply : shared.ok);
+    SWP_MARK;
 }
 
 /* SET key value [NX] [XX] [EX <seconds>] [PX <milliseconds>] */
@@ -156,15 +160,18 @@ void psetexCommand(client *c) {
 
 int getGenericCommand(client *c) {
     robj *o;
+    SWP_MARK;
 
     if ((o = lookupKeyReadOrReply(c,c->argv[1],shared.nullbulk)) == NULL)
         return C_OK;
 
     if (o->type != OBJ_STRING) {
         addReply(c,shared.wrongtypeerr);
+        SWP_MARK;
         return C_ERR;
     } else {
         addReplyBulk(c,o);
+        SWP_MARK;
         return C_OK;
     }
 }
@@ -186,6 +193,7 @@ void setrangeCommand(client *c) {
     long offset;
     sds value = c->argv[3]->ptr;
 
+    SWP_MARK;
     if (getLongFromObjectOrReply(c,c->argv[2],&offset,NULL) != C_OK)
         return;
 
@@ -239,6 +247,7 @@ void setrangeCommand(client *c) {
         server.dirty++;
     }
     addReplyLongLong(c,sdslen(o->ptr));
+    SWP_MARK;
 }
 
 void getrangeCommand(client *c) {
@@ -247,6 +256,7 @@ void getrangeCommand(client *c) {
     char *str, llbuf[32];
     size_t strlen;
 
+    SWP_MARK;
     if (getLongLongFromObjectOrReply(c,c->argv[2],&start,NULL) != C_OK)
         return;
     if (getLongLongFromObjectOrReply(c,c->argv[3],&end,NULL) != C_OK)
@@ -280,6 +290,7 @@ void getrangeCommand(client *c) {
     } else {
         addReplyBulkCBuffer(c,(char*)str+start,end-start+1);
     }
+    SWP_MARK;
 }
 
 void mgetCommand(client *c) {

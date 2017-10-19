@@ -2486,7 +2486,6 @@ int processCommand(client *c) {
         if (listLength(server.ready_keys))
             handleClientsBlockedOnLists();
     }
-    SWP_MARK;
     return C_OK;
 }
 
