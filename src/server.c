@@ -34,6 +34,8 @@
 #include "latency.h"
 #include "atomicvar.h"
 
+#include <swp.h>
+
 #include <time.h>
 #include <signal.h>
 #include <sys/wait.h>
@@ -1944,6 +1946,7 @@ void initServer(void) {
     slowlogInit();
     latencyMonitorInit();
     bioInit();
+    swp_init();
     server.initial_memory_usage = zmalloc_used_memory();
 }
 
@@ -2299,6 +2302,7 @@ void call(client *c, int flags) {
  * other operations can be performed by the caller. Otherwise
  * if C_ERR is returned the client was destroyed (i.e. after QUIT). */
 int processCommand(client *c) {
+    SWP_MARK;
     /* The QUIT command is handled separately. Normal command procs will
      * go through checking for replication and QUIT will cause trouble
      * when FORCE_REPLICATION is enabled and would be implemented in
@@ -2469,6 +2473,7 @@ int processCommand(client *c) {
     }
 
     /* Exec the command */
+    SWP_MARK;
     if (c->flags & CLIENT_MULTI &&
         c->cmd->proc != execCommand && c->cmd->proc != discardCommand &&
         c->cmd->proc != multiCommand && c->cmd->proc != watchCommand)
@@ -2481,6 +2486,7 @@ int processCommand(client *c) {
         if (listLength(server.ready_keys))
             handleClientsBlockedOnLists();
     }
+    SWP_MARK;
     return C_OK;
 }
 
@@ -2506,6 +2512,8 @@ int prepareForShutdown(int flags) {
     int nosave = flags & SHUTDOWN_NOSAVE;
 
     serverLog(LL_WARNING,"User requested shutdown...");
+
+    swp_deinit();
 
     /* Kill all the Lua debugger forked sessions. */
     ldbKillForkedSessions();
